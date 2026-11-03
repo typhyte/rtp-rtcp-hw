@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 )
 
 func main() {
-	//var pckt [4]string
 	// parts of the packet
-	//var seq int // sequence of the packet being sent
-	//var size int // how long the message is in characters (no more than 64)
-	//var msg string // the actual contents
-	//var dType string // two types, data and eof.
+	var seq int      // sequence of the packet being sent
+	var size int     // how long the message is in characters (no more than 64)
+	var msg string   // the actual contents
+	var dType string // two types, data and eof.
 
 	raddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:7030") // TODO: remember to softcode addr
 	if err != nil {
@@ -24,11 +25,21 @@ func main() {
 	}
 	defer conn.Close()
 
-	// TODO: implement breaking_strings.go into here.
-	send_str := chunkStrings("Hello everyone! This is a test to see if this function properly chunks strings. It did in the prototype, but lets see it in action...")
+	send_str := chunkStrings("Hi everybody, what's up? This should be a slightly smaller message, to test.")
+
 	for i := range send_str {
-		fmt.Println(send_str[i])
-		send(send_str[i], conn)
+		seq = i
+		size = len(send_str[i])
+		msg = send_str[i]
+		if send_str[i] == "" {
+			dType = "eof"
+		} else {
+			dType = "data"
+		}
+
+		pckt := []string{strconv.Itoa(seq), strconv.Itoa(size), msg, dType}
+		fmt.Println(strings.Join(pckt, ","))
+		send(strings.Join(pckt, ","), conn)
 	}
 
 	// read from server
@@ -59,6 +70,10 @@ func chunkStrings(s string) (brokeStrings []string) {
 			count++
 		}
 	}
-	fmt.Println("we made it out the function!")
+	// so we know where to put the eof signifier
+	brokeStrings = append(brokeStrings, "")
+
+	fmt.Println("Strings chunked!")
+
 	return
 }
